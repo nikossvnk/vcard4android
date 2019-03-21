@@ -62,10 +62,10 @@ open class AndroidAddressBook<T1: AndroidContact, T2: AndroidGroup>(
         set(data) = ContactsContract.SyncState.set(provider, account, data)
 
 
-    fun queryContacts(where: String?, whereArgs: Array<String>?): List<T1> {
+    fun queryContacts(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): List<T1> {
         val contacts = LinkedList<T1>()
         provider!!.query(rawContactsSyncUri(),
-                null, where, whereArgs, null)?.use { cursor ->
+                null, where, whereArgs, sortOrder)?.use { cursor ->
             while (cursor.moveToNext()) {
                 val values = ContentValues(cursor.columnCount)
                 DatabaseUtils.cursorRowToContentValues(cursor, values)
@@ -75,11 +75,11 @@ open class AndroidAddressBook<T1: AndroidContact, T2: AndroidGroup>(
         return contacts
     }
 
-    fun queryGroups(where: String?, whereArgs: Array<String>?): List<T2> {
+    fun queryGroups(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): List<T2> {
         val groups = LinkedList<T2>()
         provider!!.query(groupsSyncUri(),
                 arrayOf(Groups._ID, AndroidGroup.COLUMN_FILENAME, AndroidGroup.COLUMN_ETAG),
-                where, whereArgs, null)?.use { cursor ->
+                where, whereArgs, sortOrder)?.use { cursor ->
             while (cursor.moveToNext()) {
                 val values = ContentValues(cursor.columnCount)
                 DatabaseUtils.cursorRowToContentValues(cursor, values)
