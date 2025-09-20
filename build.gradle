@@ -29,6 +29,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'org.jetbrains.dokka'
 
 android {
+    namespace 'at.bitfire.vcard4android'
     compileSdkVersion rootProject.ext.compileSdkVersion
 
     defaultConfig {
@@ -52,6 +53,10 @@ android {
             excludes += ['LICENSE', 'META-INF/LICENSE.txt', 'META-INF/NOTICE.txt']
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
+    
     lint {
         disable 'AllowBackup', 'InvalidPackage'
     }
