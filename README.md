@@ -1,5 +1,5 @@
 
-[![build status](https://gitlab.com/bitfireAT/vcard4android/badges/master/build.svg)](https://gitlab.com/bitfireAT/vcard4android/commits/master)
+[![build status](https://github.com/nikossvnk/vcard4android/actions/workflows/check.yml/badge.svg)](https://github.com/nikossvnk/vcard4android/actions/workflows/check.yml)
 
 
 # vcard4android
@@ -16,10 +16,30 @@ It has been primarily developed for [DAVx⁵](https://www.davx5.com).
 _This software is not affiliated to, nor has it been authorized, sponsored or otherwise approved
 by Google LLC. Android is a trademark of Google LLC._
 
-Generated KDoc: https://bitfireAT.gitlab.io/vcard4android/dokka/vcard4android/
-
 Discussion: https://forums.bitfire.at/category/18/libraries
 
+
+## Development and API migration
+
+This fork is maintained at `github.com/nikossvnk/vcard4android`. Use JDK 25,
+the included Gradle 9.8.2 wrapper, and Android SDK Platform 37.0. The module uses
+AGP 9.5.0, built-in Kotlin 2.4.21, Java 17 bytecode, minSdk 23, and core-library
+desugaring.
+
+```sh
+./gradlew build compileDebugAndroidTestKotlin
+./gradlew connectedCheck
+```
+
+ez-vcard 0.12.2 represents full dates with `Temporal`, not `java.util.Date`.
+Use `Contact.toLocalDate(temporal)` where a local date is needed; partial dates
+remain `PartialDate`. Preserve missing-year birthdays and leap-day semantics.
+Consumer R8 rules cover ez-vcard's optional reflective integrations.
+
+JUnit4 JVM tests cover vCard parsing/serialization and date conversion.
+Instrumented provider tests need a device/emulator and contacts permissions.
+CI builds, lints, runs JVM tests, and compiles instrumentation; it does not execute
+device tests. Dependabot and scheduled CI run weekly.
 
 ## Contact
 

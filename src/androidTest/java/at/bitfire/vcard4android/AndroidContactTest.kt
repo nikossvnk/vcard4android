@@ -31,7 +31,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.StringReader
-import java.text.SimpleDateFormat
+import java.time.LocalDate
 
 class AndroidContactTest {
 
@@ -74,7 +74,7 @@ class AndroidContactTest {
         vcard.phoneticGivenName = "Först"
         vcard.phoneticMiddleName = "Mittelerde"
         vcard.phoneticFamilyName = "Fämilie"
-        vcard.birthDay = Birthday(SimpleDateFormat("yyyy-MM-dd").parse("1980-04-16"))
+        vcard.birthDay = Birthday(LocalDate.of(1980, 4, 16))
         vcard.photo = samplePhoto
 
         val contact = AndroidContact(addressBook, vcard, null, null)
@@ -116,8 +116,8 @@ class AndroidContactTest {
         try {
             val contact2 = dbContact2.contact!!
             assertEquals("Test", contact2.displayName)
-            assertEquals("+12345", contact2.phoneNumbers.first.property.text)
-            assertEquals("test@example.com", contact2.emails.first.property.value)
+            assertEquals("+12345", contact2.phoneNumbers.first().property.text)
+            assertEquals("test@example.com", contact2.emails.first().property.value)
         } finally {
             dbContact2.delete()
         }

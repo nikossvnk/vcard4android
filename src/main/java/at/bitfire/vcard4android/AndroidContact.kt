@@ -36,8 +36,10 @@ import org.apache.commons.text.WordUtils
 import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.text.ParseException
-import java.text.SimpleDateFormat
+import java.text.ParsePosition
+import java.time.DateTimeException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.logging.Level
 import kotlin.math.min
@@ -52,14 +54,17 @@ open class AndroidContact(
         const val COLUMN_UID = RawContacts.SYNC1
         const val COLUMN_ETAG = RawContacts.SYNC2
 
+        /** Format of [Event.START_DATE] values with full date (like `yyyy-MM-dd`) */
+        private val EVENT_DATE_FORMAT = DateTimeFormatter.ofPattern("u-M-d", Locale.ROOT)
+
         fun labelToXName(label: String) = "X-" + label
                 .replace(" ","_")
                 .replace(Regex("[^\\p{L}\\p{Nd}\\-_]"), "")
-                .toUpperCase(Locale.getDefault())
+                .uppercase(Locale.getDefault())
 
         fun xNameToLabel(xname: String): String {
             // "X-MY_PROPERTY"
-            var s = xname.toLowerCase(Locale.getDefault())    // 1. ensure lower case -> "x-my_property"
+            var s = xname.lowercase(Locale.getDefault())    // 1. ensure lower case -> "x-my_property"
             if (s.startsWith("x-"))                     // 2. remove x- from beginning -> "my_property"
                 s = s.substring(2)
             s = s.replace('_', ' ')          // 3. replace "_" by " " -> "my property"
@@ -107,6 +112,8 @@ open class AndroidContact(
          * @throws FileNotFoundException when the contact is not available (anymore)
          * @throws RemoteException on contact provider errors
          */
+        // Im and SipAddress are deprecated without replacement, but the provider still stores them
+        @Suppress("DEPRECATION")
         get() {
             field?.let { return field }
 
@@ -320,6 +327,7 @@ open class AndroidContact(
         row.getAsString(Organization.JOB_DESCRIPTION)?.let { contact.jobDescription = it }
     }
 
+    @Suppress("DEPRECATION")    // Im is deprecated without replacement
     protected open fun populateIMPP(row: ContentValues) {
         val handle = row.getAsString(Im.DATA)
         if (handle == null) {
@@ -455,12 +463,12 @@ open class AndroidContact(
 
     protected open fun populateEvent(row: ContentValues) {
         val dateStr = row.getAsString(Event.START_DATE)
-        var full: Date? = null
+        var full: LocalDate? = null
         var partial: PartialDate? = null
-        val fullFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
         try {
-            full = fullFormat.parse(dateStr)
-        } catch(e: ParseException) {
+            // like SimpleDateFormat.parse(String), ignore trailing text (e.g. a time)
+            full = LocalDate.from(EVENT_DATE_FORMAT.parse(dateStr, ParsePosition(0)))
+        } catch(e: DateTimeException) {
             try {
                 partial = PartialDate.parse(dateStr)
             } catch (e: IllegalArgumentException) {
@@ -513,6 +521,7 @@ open class AndroidContact(
         }
     }
 
+    @Suppress("DEPRECATION")    // SipAddress is deprecated without replacement
     protected open fun populateSipAddress(row: ContentValues) {
         try {
             val impp = Impp("sip:" + row.getAsString(SipAddress.SIP_ADDRESS))
@@ -564,6 +573,7 @@ open class AndroidContact(
         return resultUri
     }
 
+    @Suppress("DEPRECATION")    // Im and SipAddress are deprecated without replacement
     fun update(contact: Contact): Uri {
         this.contact = contact
 
@@ -838,6 +848,7 @@ open class AndroidContact(
         batch.enqueue(builder)
     }
 
+    @Suppress("DEPRECATION")    // Im and SipAddress are deprecated without replacement
     protected open fun insertIMPP(batch: BatchOperation, labeledImpp: LabeledProperty<Impp>) {
         val impp = labeledImpp.property
 
@@ -972,7 +983,7 @@ open class AndroidContact(
             if (!address.region.isNullOrEmpty())
                 lines += address.region
             if (!address.country.isNullOrEmpty())
-                lines += address.country.toUpperCase(Locale.getDefault())
+                lines += address.country.uppercase(Locale.getDefault())
 
             formattedAddress = lines.joinToString("\n")
         }
@@ -1047,8 +1058,12 @@ open class AndroidContact(
         val dateStr: String
         dateStr = when {
             dateOrTime.date != null -> {
-                val format = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
-                format.format(dateOrTime.date)
+                val date = Contact.toLocalDate(dateOrTime.date)
+                if (date == null) {
+                    Constants.log.log(Level.WARNING, "Ignoring date/time of unknown type", dateOrTime)
+                    return
+                }
+                date.format(DateTimeFormatter.ISO_LOCAL_DATE)
             }
             dateOrTime.partialDate != null ->
                 dateOrTime.partialDate.toString()

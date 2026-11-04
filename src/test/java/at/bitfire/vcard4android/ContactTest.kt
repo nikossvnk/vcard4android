@@ -20,7 +20,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 import java.io.StringReader
 import java.nio.charset.Charset
-import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.*
 
 class ContactTest {
@@ -55,9 +55,9 @@ class ContactTest {
                 "END:VCARD"
         val c = Contact.fromReader(StringReader(vcard), null).first()
         assertEquals(1, c.phoneNumbers.size)
-        assertEquals("12345", c.phoneNumbers.first.property.text)
+        assertEquals("12345", c.phoneNumbers.first().property.text)
         assertEquals(1, c.emails.size)
-        assertEquals("test@example.com", c.emails.first.property.value)
+        assertEquals("test@example.com", c.emails.first().property.value)
     }
 
     @Test
@@ -179,8 +179,8 @@ class ContactTest {
         assertTrue(vCard.contains("\ngroup1.X-ABLabel:My Phone\r\n"))
 
         c = regenerate(c, VCardVersion.V4_0)
-        assertEquals("12345", c.phoneNumbers.first.property.text)
-        assertEquals("My Phone", c.phoneNumbers.first.label)
+        assertEquals("12345", c.phoneNumbers.first().property.text)
+        assertEquals("My Phone", c.phoneNumbers.first().label)
     }
 
     @Test
@@ -212,7 +212,7 @@ class ContactTest {
 
         // TEL
         assertEquals(2, c.phoneNumbers.size)
-        var phone = c.phoneNumbers.first
+        var phone = c.phoneNumbers.first()
         assertEquals("Useless", phone.label)
         assertTrue(phone.property.types.contains(TelephoneType.VOICE))
         assertTrue(phone.property.types.contains(TelephoneType.HOME))
@@ -226,7 +226,7 @@ class ContactTest {
 
         // EMAIL
         assertEquals(2, c.emails.size)
-        var email = c.emails.first
+        var email = c.emails.first()
         assertNull(email.label)
         assertTrue(email.property.types.contains(EmailType.HOME))
         assertTrue(email.property.types.contains(EmailType.PREF))
@@ -247,7 +247,7 @@ class ContactTest {
 
         // IMPP
         assertEquals(3, c.impps.size)
-        var impp = c.impps.first
+        var impp = c.impps.first()
         assertEquals("MyIM", impp.label)
         assertTrue(impp.property.types.contains(ImppType.PERSONAL))
         assertTrue(impp.property.types.contains(ImppType.MOBILE))
@@ -273,7 +273,7 @@ class ContactTest {
 
         // ADR
         assertEquals(2, c.addresses.size)
-        var addr = c.addresses.first
+        var addr = c.addresses.first()
         assertNull(addr.label)
         assertTrue(addr.property.types.contains(AddressType.WORK))
         assertTrue(addr.property.types.contains(AddressType.POSTAL))
@@ -320,14 +320,13 @@ class ContactTest {
         assertTrue(url1 && url2)
 
         // BDAY
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
-        assertEquals("1996-04-15", dateFormat.format(c.birthDay!!.date))
+        assertEquals(LocalDate.of(1996, 4, 15), c.birthDay!!.date)
         // ANNIVERSARY
-        assertEquals("2014-08-12", dateFormat.format(c.anniversary!!.date))
+        assertEquals(LocalDate.of(2014, 8, 12), c.anniversary!!.date)
 
         // RELATED
         assertEquals(2, c.relations.size)
-        var rel = c.relations.first
+        var rel = c.relations.first()
         assertTrue(rel.types.contains(RelatedType.CO_WORKER))
         assertTrue(rel.types.contains(RelatedType.CRUSH))
         assertEquals("Ägidius", rel.text)
@@ -346,19 +345,19 @@ class ContactTest {
         val c = regenerate(parseContact("allfields-vcard3.vcf"), VCardVersion.V4_0)
         // let's check only things that should be different when VCard 4.0 is generated
 
-        val phone = c.phoneNumbers.first.property
+        val phone = c.phoneNumbers.first().property
         assertFalse(phone.types.contains(TelephoneType.PREF))
         assertNotNull(phone.pref)
 
-        val email = c.emails.first.property
+        val email = c.emails.first().property
         assertFalse(email.types.contains(EmailType.PREF))
         assertNotNull(email.pref)
 
-        val impp = c.impps.first.property
+        val impp = c.impps.first().property
         assertFalse(impp.types.contains(ImppType.PREF))
         assertNotNull(impp.pref)
 
-        val addr = c.addresses.first.property
+        val addr = c.addresses.first().property
         assertFalse(addr.types.contains(AddressType.PREF))
         assertNotNull(addr.pref)
     }

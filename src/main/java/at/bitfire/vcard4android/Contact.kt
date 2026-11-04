@@ -25,6 +25,13 @@ import java.io.OutputStream
 import java.io.Reader
 import java.net.URI
 import java.net.URISyntaxException
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Level
@@ -278,17 +285,33 @@ class Contact {
             }
         }
 
+        /**
+         * Gets the date part of a date/time value of a [DateOrTimeProperty]. Date/times with
+         * time zone are converted to the system default time zone first.
+         *
+         * @param temporal date/time as used by [DateOrTimeProperty.getDate]
+         * @return date, or `null` if [temporal] is of an unsupported type
+         */
+        fun toLocalDate(temporal: Temporal): LocalDate? =
+            when (temporal) {
+                is LocalDate -> temporal
+                is LocalDateTime -> temporal.toLocalDate()
+                is OffsetDateTime -> temporal.atZoneSameInstant(ZoneId.systemDefault()).toLocalDate()
+                is ZonedDateTime -> temporal.withZoneSameInstant(ZoneId.systemDefault()).toLocalDate()
+                is Instant -> temporal.atZone(ZoneId.systemDefault()).toLocalDate()
+                else -> null
+            }
+
         private fun<T: DateOrTimeProperty> checkVCard3PartialDate(property: T): T {
-            property.date?.let { date ->
+            property.date?.let { temporal ->
                 property.getParameter(DATE_PARAMETER_OMIT_YEAR)?.let { omitYearStr ->
                     try {
                         val omitYear = Integer.parseInt(omitYearStr)
-                        val cal = GregorianCalendar.getInstance()
-                        cal.time = date
-                        if (cal.get(GregorianCalendar.YEAR) == omitYear) {
+                        val date = toLocalDate(temporal)
+                        if (date != null && date.year == omitYear) {
                             val partial = PartialDate.builder()
-                                    .date(cal.get(GregorianCalendar.DAY_OF_MONTH))
-                                    .month(cal.get(GregorianCalendar.MONTH) + 1)
+                                    .date(date.dayOfMonth)
+                                    .month(date.monthValue)
                                     .build()
                             property.partialDate = partial
                         }
@@ -442,7 +465,7 @@ class Contact {
         }
 
         // ANNIVERSARY, BDAY
-        fun<T: DateOrTimeProperty> dateOrPartialDate(prop: T, generator: (Date) -> T): T? {
+        fun<T: DateOrTimeProperty> dateOrPartialDate(prop: T, generator: (LocalDate) -> T): T? {
             if (vCardVersion == VCardVersion.V4_0 || prop.date != null)
                 return prop
             else prop.partialDate?.let { partial ->
@@ -453,9 +476,8 @@ class Contact {
                         prop
                     else {
                         // vCard 3: partial date with month and day, but without year
-                        val fakeCal = GregorianCalendar.getInstance()
-                        fakeCal.set(DATE_PARAMETER_OMIT_YEAR_DEFAULT, partial.month - 1, partial.date)
-                        val fakeProp = generator(fakeCal.time)
+                        val fakeDate = LocalDate.of(DATE_PARAMETER_OMIT_YEAR_DEFAULT, partial.month, partial.date)
+                        val fakeProp = generator(fakeDate)
                         fakeProp.addParameter(DATE_PARAMETER_OMIT_YEAR, DATE_PARAMETER_OMIT_YEAR_DEFAULT.toString())
                         fakeProp
                     }
@@ -463,8 +485,8 @@ class Contact {
             }
             return null
         }
-        anniversary?.let { vCard.anniversary = dateOrPartialDate(it) { time -> Anniversary(time, false) } }
-        birthDay?.let { vCard.birthday = dateOrPartialDate(it) { time -> Birthday(time, false) } }
+        anniversary?.let { vCard.anniversary = dateOrPartialDate(it) { date -> Anniversary(date) } }
+        birthDay?.let { vCard.birthday = dateOrPartialDate(it) { date -> Birthday(date) } }
 
         // RELATED
         relations.forEach { vCard.addRelated(it) }
