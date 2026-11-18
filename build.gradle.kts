@@ -57,7 +57,7 @@ dependencies {
 
     implementation("androidx.annotation:annotation:1.11.0")
     implementation("commons-io:commons-io:2.22.0")
-    implementation("org.apache.commons:commons-lang3:3.21.0")
+    implementation("org.apache.commons:commons-lang3:3.22.0")
     implementation("org.apache.commons:commons-text:1.15.0")
 
     // ez-vcard to parse/generate vCards
